@@ -1,33 +1,6 @@
 -- Example usage of the AI Chat UI Library
-
-local http = game:GetService("HttpService")
-
--- URLs for the library files
-local CHAT_LIBRARY_URL = "https://raw.githubusercontent.com/testing2122/Roblox-AI-UI-Number1/main/ChatLibrary.lua"
-local CHAT_EXTENSIONS_URL = "https://raw.githubusercontent.com/testing2122/Roblox-AI-UI-Number1/main/ChatExtensions.lua"
-
--- Load the library files
-local function loadModule(url)
-    local success, result = pcall(function()
-        return loadstring(http:GetAsync(url))()
-    end)
-    
-    if not success then
-        warn("Failed to load module from " .. url)
-        warn(result)
-        return nil
-    end
-    
-    return result
-end
-
-local ChatLibrary = loadModule(CHAT_LIBRARY_URL)
-local ChatExtensions = loadModule(CHAT_EXTENSIONS_URL)
-
-if not ChatLibrary or not ChatExtensions then
-    error("Failed to load required modules")
-    return
-end
+local ChatLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/testing2122/Roblox-AI-UI-Number1/main/ChatLibrary.lua"))();
+local ChatExtensions = loadstring(game:HttpGet("https://raw.githubusercontent.com/testing2122/Roblox-AI-UI-Number1/main/ChatExtensions.lua"))();
 
 -- Create chat instance with custom config
 local chat = ChatLibrary.new({
@@ -43,41 +16,35 @@ local chat = ChatLibrary.new({
         transparency = 0.95,
         strokeTransparency = 0.9
     }
-})
+});
 
 -- Add extensions
-ChatExtensions.addTypingIndicator(chat)
-ChatExtensions.addChatSidebar(chat)
-ChatExtensions.addVoiceInput(chat)
+ChatExtensions.addTypingIndicator(chat);
+ChatExtensions.addChatSidebar(chat);
+ChatExtensions.addVoiceInput(chat);
 
 -- Set up event handlers
 chat:on("onMessageSent", function(message, chatId)
-    print("Message sent:", message, "in chat:", chatId)
+    chat:showTypingIndicator();
     
-    -- Show typing indicator
-    chat:showTypingIndicator()
-    
-    -- Simulate AI response after delay
     task.delay(1.5, function()
-        chat:hideTypingIndicator()
-        chat:addMessage("This is a simulated AI response", false)
-    end)
-end)
+        chat:hideTypingIndicator();
+        chat:addMessage("This is a simulated AI response", false);
+    end);
+end);
 
 chat:on("onChatCreated", function(chatId, chatData)
-    print("New chat created:", chatId)
-end)
+    print("New chat created:", chatId);
+end);
 
 -- Initialize the UI
-chat:initialize()
+chat:initialize();
 
 -- Set custom title and subtitle
-chat:setTitle("AI Chat Interface")
-chat:setSubtitle("Ask me anything!")
+chat:setTitle("AI Chat Interface");
+chat:setSubtitle("Ask me anything!");
 
--- Example of how to handle cleanup
-local function cleanup()
-    chat:destroy()
-end
-
-game:BindToClose(cleanup)
+-- Cleanup function if needed
+getgenv().destroyChat = function()
+    chat:destroy();
+end;
