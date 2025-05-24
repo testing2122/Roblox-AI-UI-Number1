@@ -15,7 +15,9 @@ local DEFAULT_CONFIG = {
         primary = Color3.fromRGB(139, 69, 255),
         secondary = Color3.fromRGB(99, 102, 255),
         accent = Color3.fromRGB(217, 70, 239),
-        text = Color3.fromRGB(255, 255, 255)
+        text = Color3.fromRGB(255, 255, 255),
+        button = Color3.fromRGB(30, 30, 35),
+        buttonHover = Color3.fromRGB(40, 40, 45)
     },
     animations = {
         duration = 0.3,
@@ -57,6 +59,9 @@ function ChatLibrary.new(config)
     self.chatIdCounter = 0
     self.isInChatMode = false
     self.sidebarOpen = false
+    self.tabOpen = false
+    self.buttons = {}
+    self.conversationItems = {}
     
     -- Event callbacks
     self.callbacks = {
@@ -298,6 +303,76 @@ function ChatLibrary:createInputContainer()
     self:setupInputEvents()
 end
 
+function ChatLibrary:createButtonContainer()
+    local buttonContainer = Instance.new("Frame")
+    buttonContainer.Name = "ButtonContainer"
+    buttonContainer.Size = UDim2.new(1, -32, 0, 40)
+    buttonContainer.Position = UDim2.new(0, 16, 0, 85)
+    buttonContainer.BackgroundTransparency = 1
+    buttonContainer.Parent = self.ui.inputContainer
+    
+    self.ui.buttonContainer = buttonContainer
+    
+    return buttonContainer
+end
+
+function ChatLibrary:createConversationTab()
+    local conversationTab = Instance.new("Frame")
+    conversationTab.Name = "ConversationTab"
+    conversationTab.Size = UDim2.new(0, 300, 1, 0)
+    conversationTab.Position = UDim2.new(0, -300, 0, 0)
+    conversationTab.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    conversationTab.BackgroundTransparency = 0.1
+    conversationTab.BorderSizePixel = 0
+    conversationTab.ZIndex = 30
+    conversationTab.Parent = self.ui.mainFrame
+    
+    local tabHeader = Instance.new("Frame")
+    tabHeader.Name = "TabHeader"
+    tabHeader.Size = UDim2.new(1, 0, 0, 60)
+    tabHeader.Position = UDim2.new(0, 0, 0, 0)
+    tabHeader.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+    tabHeader.BackgroundTransparency = 0.5
+    tabHeader.BorderSizePixel = 0
+    tabHeader.ZIndex = 31
+    tabHeader.Parent = conversationTab
+    
+    local headerTitle = Instance.new("TextLabel")
+    headerTitle.Name = "HeaderTitle"
+    headerTitle.Size = UDim2.new(1, -20, 1, 0)
+    headerTitle.Position = UDim2.new(0, 20, 0, 0)
+    headerTitle.BackgroundTransparency = 1
+    headerTitle.Text = "Conversations"
+    headerTitle.TextColor3 = self.config.colors.text
+    headerTitle.TextSize = 18
+    headerTitle.Font = Enum.Font.GothamMedium
+    headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+    headerTitle.ZIndex = 32
+    headerTitle.Parent = tabHeader
+    
+    local conversationList = Instance.new("ScrollingFrame")
+    conversationList.Name = "ConversationList"
+    conversationList.Size = UDim2.new(1, 0, 1, -60)
+    conversationList.Position = UDim2.new(0, 0, 0, 60)
+    conversationList.BackgroundTransparency = 1
+    conversationList.BorderSizePixel = 0
+    conversationList.ScrollBarThickness = 6
+    conversationList.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+    conversationList.ScrollBarImageTransparency = 0.7
+    conversationList.ZIndex = 31
+    conversationList.Parent = conversationTab
+    
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    listLayout.Padding = UDim.new(0, 1)
+    listLayout.Parent = conversationList
+    
+    self.ui.conversationTab = conversationTab
+    self.ui.conversationList = conversationList
+    
+    return conversationTab
+end
+
 function ChatLibrary:setupInputEvents()
     local textBox = self.ui.textBox
     
@@ -441,6 +516,8 @@ function ChatLibrary:initialize()
     self:createCenterContainer()
     self:createTitleSection()
     self:createInputContainer()
+    self:createButtonContainer()
+    self:createConversationTab()
     
     spawn(function()
         self:animateEntrance()
@@ -477,9 +554,150 @@ function ChatLibrary:setSubtitle(subtitle)
     end
 end
 
+function ChatLibrary:addButton(text, callback)
+    if not self.ui.buttonContainer then
+        self:createButtonContainer()
+    end
+    
+    local buttonId = #self.buttons + 1
+    local buttonWidth = 80
+    local buttonMargin = 10
+    local totalButtons = buttonId
+    
+    local button = Instance.new("TextButton")
+    button.Name = "Button_" .. buttonId
+    button.Size = UDim2.new(0, buttonWidth, 0, 30)
+    button.Position = UDim2.new(1, -((buttonWidth + buttonMargin) * totalButtons), 0, 5)
+    button.BackgroundColor3 = self.config.colors.button or Color3.fromRGB(30, 30, 35)
+    button.BackgroundTransparency = 0.1
+    button.BorderSizePixel = 0
+    button.Text = text
+    button.TextColor3 = self.config.colors.text
+    button.TextSize = 14
+    button.Font = Enum.Font.Gotham
+    button.ZIndex = 20
+    button.Parent = self.ui.buttonContainer
+    
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.Parent = button
+    
+    local buttonStroke = Instance.new("UIStroke")
+    buttonStroke.Color = self.config.colors.text
+    buttonStroke.Transparency = 0.9
+    buttonStroke.Thickness = 1
+    buttonStroke.Parent = button
+    
+    button.MouseEnter:Connect(function()
+        local hoverTween = TweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundColor3 = self.config.colors.buttonHover or Color3.fromRGB(40, 40, 45)
+        })
+        hoverTween:Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        local leaveTween = TweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundColor3 = self.config.colors.button or Color3.fromRGB(30, 30, 35)
+        })
+        leaveTween:Play()
+    end)
+    
+    button.MouseButton1Click:Connect(function()
+        if typeof(callback) == "function" then
+            callback()
+        end
+    end)
+    
+    table.insert(self.buttons, {
+        button = button,
+        callback = callback
+    })
+    
+    return button
+end
+
+function ChatLibrary:toggleConversationTab()
+    self.tabOpen = not self.tabOpen
+    local targetPosition = self.tabOpen and UDim2.new(0, 0, 0, 0) or UDim2.new(0, -300, 0, 0)
+    
+    local tabTween = TweenService:Create(self.ui.conversationTab, 
+        TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Position = targetPosition
+    })
+    tabTween:Play()
+end
+
+function ChatLibrary:addConversationItem(chatId, title)
+    if not self.ui.conversationList then
+        return
+    end
+    
+    if self.conversationItems[chatId] then
+        self.conversationItems[chatId].title.Text = title
+        return
+    end
+    
+    local itemHeight = 50
+    
+    local item = Instance.new("Frame")
+    item.Name = "Chat_" .. chatId
+    item.Size = UDim2.new(1, 0, 0, itemHeight)
+    item.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    item.BackgroundTransparency = 0.5
+    item.BorderSizePixel = 0
+    item.ZIndex = 32
+    item.Parent = self.ui.conversationList
+    
+    local itemTitle = Instance.new("TextLabel")
+    itemTitle.Name = "Title"
+    itemTitle.Size = UDim2.new(1, -20, 1, 0)
+    itemTitle.Position = UDim2.new(0, 10, 0, 0)
+    itemTitle.BackgroundTransparency = 1
+    itemTitle.Text = title
+    itemTitle.TextColor3 = self.config.colors.text
+    itemTitle.TextSize = 14
+    itemTitle.Font = Enum.Font.Gotham
+    itemTitle.TextXAlignment = Enum.TextXAlignment.Left
+    itemTitle.TextTruncate = Enum.TextTruncate.AtEnd
+    itemTitle.ZIndex = 33
+    itemTitle.Parent = item
+    
+    local highlight = Instance.new("Frame")
+    highlight.Name = "Highlight"
+    highlight.Size = UDim2.new(0, 3, 1, 0)
+    highlight.Position = UDim2.new(0, 0, 0, 0)
+    highlight.BackgroundColor3 = self.config.colors.primary
+    highlight.BackgroundTransparency = 0.5
+    highlight.BorderSizePixel = 0
+    highlight.ZIndex = 33
+    highlight.Visible = false
+    highlight.Parent = item
+    
+    item.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            self.currentChatId = chatId
+            self:emit("onChatSwitched", chatId)
+            
+            for id, conversationItem in pairs(self.conversationItems) do
+                conversationItem.highlight.Visible = (id == chatId)
+            end
+        end
+    end)
+    
+    self.conversationItems[chatId] = {
+        item = item,
+        title = itemTitle,
+        highlight = highlight
+    }
+    
+    self.ui.conversationList.CanvasSize = UDim2.new(0, 0, 0, #self.conversationItems * itemHeight)
+    
+    return item
+end
+
 function ChatLibrary:addCustomButton(name, text, callback, position)
-    -- Method to add custom buttons to the interface
-    -- Implementation would go here
+    -- For backward compatibility
+    return self:addButton(text, callback)
 end
 
 function ChatLibrary:addCustomCommand(command, description, callback)
