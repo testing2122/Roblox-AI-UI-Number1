@@ -26,7 +26,8 @@ local DEFAULT_CONFIG = {
     ui = {
         cornerRadius = 16,
         transparency = 0.98,
-        strokeTransparency = 0.95
+        strokeTransparency = 0.95,
+        chatBoxWidth = 500 -- New property for chat box width
     }
 }
 
@@ -197,8 +198,12 @@ end
 function ChatLibrary:createCenterContainer()
     local centerContainer = Instance.new("Frame")
     centerContainer.Name = "CenterContainer"
-    centerContainer.Size = UDim2.new(0, 672, 0, 600)
-    centerContainer.Position = UDim2.new(0.5, -336, 0.5, -300)
+    
+    -- Smaller width based on config
+    local width = self.config.ui.chatBoxWidth or 500
+    centerContainer.Size = UDim2.new(0, width, 0, 600)
+    centerContainer.Position = UDim2.new(0.5, -width/2, 0.5, -300) -- Center horizontally
+    
     centerContainer.BackgroundTransparency = 1
     centerContainer.ZIndex = 10
     centerContainer.Parent = self.ui.mainFrame
@@ -465,14 +470,17 @@ function ChatLibrary:transitionToChatMode()
     underlineFade:Play()
     
     wait(0.2)
+    
+    -- Changed to only adjust Y position, keeping centered horizontally
     local inputMove = TweenService:Create(self.ui.inputContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -336, 1, -160),
         AnchorPoint = Vector2.new(0.5, 0)
     })
     inputMove:Play()
     
+    -- Adjust center container position to bottom center
+    local width = self.config.ui.chatBoxWidth or 500
     local centerMove = TweenService:Create(self.ui.centerContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -336, 0.5, -200)
+        Position = UDim2.new(0.5, -width/2, 1, -200)
     })
     centerMove:Play()
 end
